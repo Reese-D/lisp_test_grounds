@@ -1,0 +1,2 @@
+
+((:TITLE "two's company, three's a crowd" :ARTIST 0 :RATING 2 :RIPPED NIL) (:TITLE "billy bob" :ARTIST 0 :RATING NIL :RIPPED T) (:TITLE "big" :ARTIST "bang" :RATING 7 :RIPPED T) (:TITLE "roses" :ARTIST "red" :RATING 8 :RIPPED T)) 
