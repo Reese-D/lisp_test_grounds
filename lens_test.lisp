@@ -25,7 +25,7 @@
 
 (defun set-copy (list key value)
   (if (eq (car list) nil) nil
-      (let ((next (lens-set (cdr list) key value)))
+      (let ((next (set-copy (cdr list) key value)))
 	(if (eq (car list) key)
 	  (append (list key value) (cdr next))
 	  (cons (car list) next)))))
@@ -58,7 +58,8 @@
 					  (:name "spoons")
 					  (:name "construction"))
 			     :address (:name "nickel st" :city "holland" :state "california"))
-		  :address (:name "townsley" :city "burrowsville" :state "wyoming")))
+		  :owner (:name "townsley"
+			  :address (:name "dimes st" :city "burrowsville" :state "wyoming"))))
 			     
 ;;Lens get interface:
 ;; (get (a) s)
@@ -101,10 +102,13 @@
 ;;lets define a new more lenses now
 (create-lense :department) ;;now we can get department out of a location object, and set it too
 (create-lense :location) ;;redefing g-location and s-location
-
+(create-lense :name)
 ;;lets make a function to compose any 2 lenses
 (defmacro compose-g-lens (A B obj)
   `(,B (,A ,obj)))
+
+;;we could make a macro to compose a list instead of just 2
+;;we could also create a function that creates these based off of the company structure automatically, which is kind of neat.
 
 ;;all of these are identical now
 (g-department (g-location company))
@@ -112,10 +116,16 @@
 (get-search company :location :department)
 (compose-g-lens g-location g-department company)
   
+(defun location-department-names (comp)
+  (map 'list #'g-name (compose-g-lens g-location g-department company)))
 
-;;some random stuff
-(s-department (g-location company) "new department")
+;;now we've created a specific lens to get the department names in a given company
+(location-department-names company)
 
+;;get-search example
+(map 'list #'g-name (get-search company :location :department ))
 
+(g-name '(:NAME "hr"))
 
+(map 'int (lambda (x) (+ 1 x)) '(1 2 3))
 ;;a better idea is to name the lense just off the thing you're getting and not to care about the parent at all
