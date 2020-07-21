@@ -18,20 +18,17 @@
 ;;functional plist search and get
 (defun get-search (list &rest tokens)
   (let ((current (getf list (car tokens))))
-      (if (eq (cdr tokens) nil)
-	  current
-	  (if (eq tokens nil) '()
-	       (apply #'get-search (append (list current) (cdr tokens)))))))
+    (if (eq (cdr tokens) nil)
+        current
+        (if (eq tokens nil) '()
+            (apply #'get-search (append (list current) (cdr tokens)))))))
 
 (defun set-copy (list key value)
   (if (eq (car list) nil) nil
       (let ((next (set-copy (cdr list) key value)))
 	(if (eq (car list) key)
-	  (append (list key value) (cdr next))
-	  (cons (car list) next)))))
-      
-       
-
+            (append (list key value) (cdr next))
+            (cons (car list) next)))))
 
 ;;;Example usage
 
@@ -60,7 +57,7 @@
 			     :address (:name "nickel st" :city "holland" :state "california"))
 		  :owner (:name "townsley"
 			  :address (:name "dimes st" :city "burrowsville" :state "wyoming"))))
-			     
+
 ;;Lens get interface:
 ;; (get (a) s)
 
@@ -115,7 +112,7 @@
 (getf (getf company :location) :department)
 (get-search company :location :department)
 (compose-g-lens g-location g-department company)
-  
+
 (defun location-department-names (comp)
   (map 'list #'g-name (compose-g-lens g-location g-department company)))
 
@@ -129,3 +126,56 @@
 
 (map 'int (lambda (x) (+ 1 x)) '(1 2 3))
 ;;a better idea is to name the lense just off the thing you're getting and not to care about the parent at all
+
+
+
+;; a function to get any top level keys from a list
+(defun get-keys (plist)
+  (if (not (eq (type-of plist) 'CONS)) (values)
+      (remove-if-not (lambda (x) (eq (type-of x) 'KEYWORD)) plist))) 
+
+
+;; ;;create all lenses 1 level deep
+;; (defmacro create-lense-1-deep (&rest keys)
+;;   (case (length keys)
+;;     (1  `(multiple-value-list (create-lense ,(car keys))))
+;;     (otherwise  `(concatenate 'list
+;;                               (create-lense-1-deep ,@(cdr keys))
+;;                               (multiple-value-list (create-lense ,(car keys)))))))
+        
+
+;; ;;create lenses for all levels
+;; (defun get-all-keys (plist)
+;;   (let ((keys (get-keys plist)))
+;;     (if (eq keys nil) (values)
+;;         (cons
+;;                      (cons (car keys) (get-all-keys (getf plist (car keys))))
+;;                      (get-all-keys (cddr plist))))))
+
+
+;;currying makes this easy
+(defun curry (function &rest args)
+  (lambda (&rest more-args)
+    (apply function (append args more-args))))
+
+;;the plist is effectively an m-ary tree structure
+;;so this will apply a function (a -> b) depth first
+(defun apply-first-values (func tree)
+  (if (atom tree) (funcall func tree)
+      (map 'list (curry #'apply-first-values func) tree)))
+
+
+
+;;some tests
+(defun id (x)
+  x)
+
+(defun print-if-key (obj)
+  (if (eq (type-of obj) 'KEYWORD)
+      obj
+      nil))
+        
+(apply-first-values #'print-if-key company)
+(apply-first-values #'id company)
+
+
