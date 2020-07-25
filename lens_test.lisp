@@ -153,18 +153,13 @@
 ;;                      (get-all-keys (cddr plist))))))
 
 
-;;currying makes this easy
-(defun curry (function &rest args)
-  (lambda (&rest more-args)
-    (apply function (append args more-args))))
+
 
 ;;the plist is effectively an m-ary tree structure
 ;;so this will apply a function (a -> b) depth first
-(defun apply-first-values (func tree)
+(defun apply-depth-first (func tree)
   (if (atom tree) (funcall func tree)
-      (map 'list (curry #'apply-first-values func) tree)))
-
-
+      (map 'list #'apply-depth-first func tree)))
 
 ;;some tests
 (defun id (x)
@@ -175,7 +170,57 @@
       obj
       nil))
         
-(apply-first-values #'print-if-key company)
-(apply-first-values #'id company)
+
+(apply-depth-first #'id company)
+
+(remove-if-not (lambda (x) (not (eq nil x))) (apply-depth-first #'print-if-key company))
+
+;;currying should help for the function we need to pass in
+(defun curry (function &rest args)
+  (lambda (&rest more-args)
+    (apply function (append args more-args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;lets try to create a list of depth-first searches
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;first lets modify the function to track depth
+(defun apply-depth-first (func tree &optional (depth 0))
+  (if (atom tree) (funcall func tree depth)
+      (map 'list #'apply-depth-first func tree depth)))
 
 
+;;now we can easily build lists of branches depth and breadth wise
+
+;; (let ((prior-depth nil)
+;;       (lists nil))
+;;   (lambda (node depth)
+
+
+(defun take-last (n list)
+  (subseq list (- (length list) n) (length list)))
+
+(defun depth-first-closure ()
+  (let ((prior-depth 0)
+        (lists nil))
+    (lambda (node depth) ;lexical closure
+      (progn
+        (if (>= depth prior-depth)
+            (setq lists (cons (cons node (car lists)) (cdr lists)))
+            ;;TODO fix this, it needs to take int account how many we backtraced, not just create a whole new list
+            (setq lists
+                  (cons (cons node (take-last
+                                    (- prior-depth depth)
+                                    (car lists)))
+                        lists)))
+        (setq prior-depth depth)
+        lists))))
+
+(defparameter fun (depth-first-closure))
+(funcall fun 0 1)
+
+  
+          
+          
+      
+              
