@@ -185,42 +185,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;first lets modify the function to track depth
-(defun apply-depth-first (func tree &optional (depth 0))
+(defun apply-depth-first (func depth tree)
   (if (atom tree) (funcall func tree depth)
-      (map 'list #'apply-depth-first func tree depth)))
+      (map 'list (curry #'apply-depth-first func depth) tree)))
 
 
 ;;now we can easily build lists of branches depth and breadth wise
-
-;; (let ((prior-depth nil)
-;;       (lists nil))
-;;   (lambda (node depth)
 
 
 (defun take-last (n list)
   (subseq list (- (length list) n) (length list)))
 
+;;add to first list of list
+(defun add-to-first (node lists)
+  (setq lists (cons (cons node (car lists)) (cdr lists))))
+
 (defun depth-first-closure ()
   (let ((prior-depth 0)
         (lists nil))
     (lambda (node depth) ;lexical closure
-      (progn
-        (if (>= depth prior-depth)
-            (setq lists (cons (cons node (car lists)) (cdr lists)))
-            ;;TODO fix this, it needs to take int account how many we backtraced, not just create a whole new list
-            (setq lists
-                  (cons (cons node (take-last
-                                    (- prior-depth depth)
-                                    (car lists)))
-                        lists)))
-        (setq prior-depth depth)
-        lists))))
+      (if (eq (type-of node) 'KEYWORD)
+          (progn
+            (if (>= depth prior-depth)
+                (add-to-first node lists)
+                (setq lists
+                      (cons (cons node (take-last
+                                        (- prior-depth depth)
+                                        (car lists)))
+                            lists)))
+            (setq prior-depth depth)
+            lists)
+          lists))))
+
+
 
 (defparameter fun (depth-first-closure))
-(funcall fun 0 1)
 
-  
-          
-          
-      
+(defun wrapper (a b)
+    (funcall fun a b))
+
+(apply-depth-first (depth-first-closure) 0 company)
+
+
               
